@@ -1,23 +1,16 @@
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-import pickle 
 import time
-
+import pandas 
+import pickle 
 
 def body_extractor(link):
-    soup = BeautifulSoup(requests.get(link).content, 'html.parser')
     
-    text = ""    
-    for con in soup.select_one(".article_txt").contents:
-        try:
-            con.text
-            continue
-        except :
-            if con == "\ufeff【서울=뉴시스】":
-                continue
-            text += " " + con
-    return text.strip()
+    soup = BeautifulSoup(requests.get(link).content, 'html.parser')
+    category = soup.select_one(".category").text
+
+    return category, soup.select_one("div.text").text.strip().replace("\n", "").replace("\r", "").replace("■", "").replace("▲", "")
+
 
 def save_file(filename, result):
 
@@ -31,11 +24,11 @@ def save_file(filename, result):
     
     with open(filename, "wb") as f:
         pickle.dump(df, f)
-    
+        
 
-def doonga_crawler(query, period=None):
+def hankyerae_crawler(query, period=None):
     
-    file_name = "./DoongA/0.bin"
+    file_name = "./hankyerae/0.bin"
     
     # data containers 
     titles = []
@@ -44,25 +37,24 @@ def doonga_crawler(query, period=None):
     dates = []
     bodies = []
     
-    i = 1 
+    i = 0 
     nobody = 0
-    
     cond_loop = True
     
     while cond_loop:
         try:
             print("-" * 30)
-            print('{} page is start'.format(i//15 + 1))
+            print('{} page is start'.format(i))
 
-            url = "http://news.donga.com/search?p={}&query={}&check_news=1&more=1&sorting=1&search_date=1&v1=&v2=&range=1".format(i, query)
+            url = "http://search.hani.co.kr/Search?command=query&keyword={}&media=news&sort=d&period=all&datefrom=2000.01.01&dateto=2019.06.05&pageseq={}".format(query, i)
             res = requests.get(url)
             soup = BeautifulSoup(res.content, 'html.parser')
 
-            if len(soup.select('p.tit')) == 0:
+            if len(soup.select(".search-none")) != 0:
                 print('***** no result! *****')
                 break
 
-            for art, cate, da in zip(soup.select("p.tit > a"), soup.select(".loc"), soup.select("p.tit > span")):
+            for art, da in zip(soup.select("dt > a"), soup.select(".date > dl > dd")):
 
                 title = art.text
                 if len(title) == 0:
@@ -74,62 +66,67 @@ def doonga_crawler(query, period=None):
                     nobody += 1
                     continue
 
-                category = cate.text
-                if len(category) == 0:
-                    category = 'unknown_category'
-
                 date = da.text
                 if len(date) == 0:
                     date = "unknown_date"
 
                 try:
-                    body = body_extractor(link)
+                    category, body = body_extractor(link)
                     if len(body) == 0:
                         print("no body")
                         nobody += 1
                         continue
+                    if len(category) == 0:
+                        category = 'unknown_category'
 
                 except Exception as ex:
                     print(ex)
                     nobody += 1
                     continue
-
+                
                 titles.append(title)
                 links.append(link)
                 categories.append(category) 
                 dates.append(date)
                 bodies.append(body)
                 
-                if int(date[:4]) < 2010:
-                    print("No need to 2010")
-                    cond_loop = False
+                try :
+                    if str(date[:4]) < 2010:
+                        print("No Need before 2010 ")
+                        save_file(file_name, [titles, links, categories, dates, bodies])
+                        cond_loop = False
 
-            print('{} page is done'.format(i//15 + 1))
-                          
-            if (i//15 / 1000) == 0:
+                except:
+                    pass
 
+            print('{} page is done'.format(i+1))
+            
+            if i // 1000 == 0:
+                
                 #save file
                 save_file(file_name, [titles, links, categories, dates, bodies])
 
                 # reset collections
-                file_name = "./DoongA/{}.bin".format(str(i//15))
+                file_name = "./hankyerae/{}.bin".format(str(i))
+                
                 titles = []
                 links = []
                 categories = []
                 dates = []
                 bodies = []
-            i += 15
-        
+
+            i += 1
         except:
             print("**"*30)
             print("wait.....")
             print("**"*30)
             time.sleep(5)
             continue
-            
-#     return [titles, links, categories, dates, bodies], nobody
+    print("NOBODY : {}".format(nobody))
     return None
 
 
-doonga_crawler('전기요금')
+hankyerae_crawler('전기요금')
+
+
 
