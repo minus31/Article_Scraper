@@ -62,7 +62,7 @@ RUN pip3 install pandas
 # keras
 RUN pip3 install keras==2.2.3
 # tensorflow
-RUN pip3 install tensorflow==2.0
+RUN pip3 install tensorflow
 
 RUN pip3 install bs4
 RUN pip3 install requests 
