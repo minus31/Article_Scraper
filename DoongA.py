@@ -14,7 +14,7 @@ def body_extractor(link):
             con.text
             continue
         except :
-            if con == "\ufeff【서울=뉴시스】":
+            if con == r"\ufeff【서울=뉴시스】":
                 continue
             text += " " + con
     return text.strip()
@@ -100,13 +100,17 @@ def doonga_crawler(query, period=None):
                 dates.append(date)
                 bodies.append(body)
                 
-                if int(date[:4]) < 2010:
-                    print("No need to 2010")
-                    cond_loop = False
+                try : 
+                    if int(date[:4]) < 2010:
+                        print("No need to 2010")
+                        save_file(file_name, [titles, links, categories, dates, bodies])
+                        cond_loop = False
+                except :
+                    pass
 
             print('{} page is done'.format(i//15 + 1))
                           
-            if (i//15 / 1000) == 0:
+            if ((i//15) / 1000) == 0:
 
                 #save file
                 save_file(file_name, [titles, links, categories, dates, bodies])
@@ -118,6 +122,7 @@ def doonga_crawler(query, period=None):
                 categories = []
                 dates = []
                 bodies = []
+                
             i += 15
         
         except:

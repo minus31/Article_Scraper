@@ -9,7 +9,7 @@ def body_extractor(link):
     soup = BeautifulSoup(requests.get(link).content, 'html.parser')
     category = soup.select_one(".category").text
 
-    return category, soup.select_one("div.text").text.strip().replace("\n", "").replace("\r", "").replace("■", "").replace("▲", "")
+    return category, soup.select_one("div.text").text.strip().replace(r"\n", "").replace(r"\r", "").replace(r"■", "").replace(r"▲", "")
 
 
 def save_file(filename, result):
@@ -28,7 +28,7 @@ def save_file(filename, result):
 
 def hankyerae_crawler(query, period=None):
     
-    file_name = "./hankyerae/0.bin"
+    file_name = "./Hankyerae/0.bin"
     
     # data containers 
     titles = []
@@ -101,13 +101,13 @@ def hankyerae_crawler(query, period=None):
 
             print('{} page is done'.format(i+1))
             
-            if i // 1000 == 0:
+            if (i+1) // 1000 == 0:
                 
                 #save file
                 save_file(file_name, [titles, links, categories, dates, bodies])
 
                 # reset collections
-                file_name = "./hankyerae/{}.bin".format(str(i))
+                file_name = "./Hankyerae/{}.bin".format(str(i))
                 
                 titles = []
                 links = []
@@ -116,6 +116,7 @@ def hankyerae_crawler(query, period=None):
                 bodies = []
 
             i += 1
+            
         except:
             print("**"*30)
             print("wait.....")
