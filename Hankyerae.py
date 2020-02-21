@@ -3,8 +3,10 @@
 import requests
 from bs4 import BeautifulSoup
 import time
-import pandas 
 import pickle 
+import pandas as pd
+import argparse
+import datetime
 
 def body_extractor(link):
     
@@ -28,9 +30,8 @@ def save_file(filename, result):
         pickle.dump(df, f)
         
 
-def hankyerae_crawler(query, period=None):
+def hankyerae_crawler(query, file_name="./han.bin", time_limit=None):
     
-    file_name = "./Hankyerae/0.bin"
     
     # data containers 
     titles = []
@@ -46,7 +47,7 @@ def hankyerae_crawler(query, period=None):
     while cond_loop:
         try:
             print("-" * 30)
-            print('{} page is start'.format(i))
+            print('{} page is start'.format(i+1))
 
             url = "http://search.hani.co.kr/Search?command=query&keyword={}&media=news&sort=d&period=all&datefrom=2000.01.01&dateto=2019.06.05&pageseq={}".format(query, i)
             res = requests.get(url)
@@ -85,37 +86,30 @@ def hankyerae_crawler(query, period=None):
                     print(ex)
                     nobody += 1
                     continue
-                
+
                 titles.append(title)
                 links.append(link)
                 categories.append(category) 
                 dates.append(date)
                 bodies.append(body)
                 
-                try :
-                    if str(date[:4]) < 2010:
-                        print("No Need before 2010 ")
-                        save_file(file_name, [titles, links, categories, dates, bodies])
+                # try :
+                #     if str(date[:4]) < 2010:
+                #         print("No Need before 2010 ")
+                #         save_file(file_name, [titles, links, categories, dates, bodies])
+                #         cond_loop = False
+
+                # except:
+                #     pass
+            if time_limit :
+                    
+                    if datetime.datetime.strptime(date, "%Y.%m.%d %H:%M") < datetime.datetime.strptime(time_limit, "%Y-%m-%d"):
+                    
+                        print("TIME LIMIT ! :: NO MORE CRAWLING AND SAVED DATA")
                         cond_loop = False
 
-                except:
-                    pass
 
             print('{} page is done'.format(i+1))
-            
-            if (i+1) // 1000 == 0:
-                
-                #save file
-                save_file(file_name, [titles, links, categories, dates, bodies])
-
-                # reset collections
-                file_name = "./Hankyerae/{}.bin".format(str(i))
-                
-                titles = []
-                links = []
-                categories = []
-                dates = []
-                bodies = []
 
             i += 1
             
@@ -124,12 +118,24 @@ def hankyerae_crawler(query, period=None):
             print("wait.....")
             print("**"*30)
             time.sleep(5)
+            save_file(file_name, [titles, links, categories, dates, bodies])
             continue
     print("NOBODY : {}".format(nobody))
+    save_file(file_name, [titles, links, categories, dates, bodies])
+
     return None
 
 
-hankyerae_crawler('전기요금')
 
+args = argparse.ArgumentParser()
 
+args.add_argument('--query', type=str, default="")
+args.add_argument('--file_name', type=str, default="./hankyerae.bin")
+args.add_argument('--time_limit', type=str, default=None)
 
+config = args.parse_args()
+
+if config.query:
+    hankyerae_crawler(config.query, config.file_name, config.time_limit)
+else : 
+    print("YOU should type query word at least 1.")
